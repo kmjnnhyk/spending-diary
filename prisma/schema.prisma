@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum Source {
+  TOSS
+  KB
+  KAKAOPAY
+  DANGGEUN
+  NAVERPAY
+}
+
+enum CategoryStatus {
+  AUTO
+  MANUAL
+  PENDING
+}
+
+model Month {
+  id           String        @id @default(cuid())
+  year         Int
+  month        Int
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+  images       UploadedImage[]
+
+  @@unique([year, month])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  icon         String?
+  color        String?
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+}
+
+model Transaction {
+  id                      String         @id @default(cuid())
+  monthId                 String
+  month                   Month          @relation(fields: [monthId], references: [id])
+  date                    DateTime
+  description             String
+  originalDescription     String?
+  amount                  Int
+  type                    TransactionType
+  source                  Source
+  categoryId              String?
+  category                Category?      @relation(fields: [categoryId], references: [id])
+  categoryStatus          CategoryStatus @default(PENDING)
+  linkedPayTransactionId  String?
+  linkedPayTransaction    Transaction?   @relation("PayLink", fields: [linkedPayTransactionId], references: [id])
+  linkedFromTransactions  Transaction[]  @relation("PayLink")
+  isPayParent             Boolean        @default(false)
+  createdAt               DateTime       @default(now())
+
+  @@index([monthId])
+  @@index([date])
+  @@index([source])
+  @@index([categoryStatus])
+}
+
+model UploadedImage {
+  id        String   @id @default(cuid())
+  monthId   String
+  month     Month    @relation(fields: [monthId], references: [id])
+  source    Source
+  filePath  String
+  parsed    Boolean  @default(false)
+  parsedAt  DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([monthId])
+}
