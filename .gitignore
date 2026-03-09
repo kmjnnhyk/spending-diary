@@ -40,6 +40,9 @@ yarn-error.log*
 # uploads
 uploads/
 
+# personal data
+account_info/
+
 # vercel
 .vercel
 
