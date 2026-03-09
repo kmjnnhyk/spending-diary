@@ -3,7 +3,8 @@ import { getTransactions } from '@/actions/transactions'
 import MonthSelector from '@/components/MonthSelector'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
 
@@ -61,22 +62,20 @@ export default async function TransactionsPage({
 
       {/* Filter bar */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        <Button
-          variant={!params.source ? 'default' : 'outline'}
-          size="sm"
-          render={<Link href={`/transactions?${baseQuery}`} />}
+        <Link
+          href={`/transactions?${baseQuery}`}
+          className={cn(buttonVariants({ variant: !params.source ? 'default' : 'outline', size: 'sm' }))}
         >
           전체
-        </Button>
+        </Link>
         {Object.entries(sourceLabels).map(([key, label]) => (
-          <Button
+          <Link
             key={key}
-            variant={params.source === key ? 'default' : 'outline'}
-            size="sm"
-            render={<Link href={`/transactions?${baseQuery}&source=${key}${params.search ? `&search=${params.search}` : ''}`} />}
+            href={`/transactions?${baseQuery}&source=${key}${params.search ? `&search=${params.search}` : ''}`}
+            className={cn(buttonVariants({ variant: params.source === key ? 'default' : 'outline', size: 'sm' }))}
           >
             {label}
-          </Button>
+          </Link>
         ))}
       </div>
 

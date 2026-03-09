@@ -5,7 +5,8 @@ import { uploadImage } from '@/actions/upload'
 import { analyzeAll } from '@/actions/analyze'
 import SourceUploadCard from './SourceUploadCard'
 import AnalysisProgress from './AnalysisProgress'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
@@ -260,17 +261,19 @@ export default function UploadFlow({ year, month }: Props) {
 
         <div className="flex flex-col gap-3">
           {result.pendingClassification > 0 && (
-            <Button
-              size="lg"
-              className="w-full bg-amber-600 hover:bg-amber-700 text-white"
-              render={<a href="/classify" />}
+            <a
+              href="/classify"
+              className={cn(buttonVariants({ size: 'lg' }), 'w-full bg-amber-600 hover:bg-amber-700 text-white')}
             >
               분류 페이지로 이동 ({result.pendingClassification}건 대기)
-            </Button>
+            </a>
           )}
-          <Button size="lg" className="w-full" render={<a href="/transactions" />}>
+          <a
+            href="/transactions"
+            className={cn(buttonVariants({ size: 'lg' }), 'w-full')}
+          >
             거래 내역 보기
-          </Button>
+          </a>
           <Button variant="outline" size="lg" className="w-full" onClick={handleReset}>
             추가 업로드
           </Button>

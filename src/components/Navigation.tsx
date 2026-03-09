@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+import { buttonVariants } from '@/components/ui/button'
 
 const navItems = [
   { href: '/', label: '대시보드' },
@@ -26,14 +26,18 @@ export default function Navigation() {
           </Link>
           <div className="flex items-center gap-1">
             {navItems.map((item) => (
-              <Button
+              <Link
                 key={item.href}
-                variant={pathname === item.href ? 'secondary' : 'ghost'}
-                size="sm"
-                render={<Link href={item.href} />}
+                href={item.href}
+                className={cn(
+                  buttonVariants({
+                    variant: pathname === item.href ? 'secondary' : 'ghost',
+                    size: 'sm',
+                  })
+                )}
               >
                 {item.label}
-              </Button>
+              </Link>
             ))}
           </div>
         </div>
