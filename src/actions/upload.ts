@@ -39,5 +39,5 @@ export async function uploadImage(formData: FormData) {
     },
   })
 
-  return { success: true, imageId: image.id, filePath: image.filePath }
+  return { success: true, imageId: image.id, monthId: monthRecord.id, filePath: image.filePath }
 }

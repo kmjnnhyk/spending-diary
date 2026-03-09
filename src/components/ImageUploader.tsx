@@ -16,7 +16,7 @@ type SourceKey = keyof typeof sourceLabels
 interface Props {
   year: number
   month: number
-  onUploaded?: (imageId: string) => void
+  onUploaded?: (imageId: string, monthId?: string) => void
 }
 
 export default function ImageUploader({ year, month, onUploaded }: Props) {
@@ -43,7 +43,7 @@ export default function ImageUploader({ year, month, onUploaded }: Props) {
     setUploading(false)
 
     if (result.success && result.imageId) {
-      onUploaded?.(result.imageId)
+      onUploaded?.(result.imageId, result.monthId)
       setPreview(null)
     }
   }
