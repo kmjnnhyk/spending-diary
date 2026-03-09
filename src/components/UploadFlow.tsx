@@ -9,13 +9,8 @@ import { autoCategorize } from '@/actions/categorize'
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
-interface StepInfo {
-  label: string
-  description: string
-}
-
-const STEPS: Record<Step, StepInfo> = {
-  1: { label: '업로드', description: '이미지를 선택하고 업로드하세요' },
+const STEPS: Record<Step, { label: string; description: string }> = {
+  1: { label: '업로드', description: '이미지를 선택하고 업로드하세요 (여러 장 가능)' },
   2: { label: '파싱 중', description: 'Claude AI가 거래 내역을 분석하고 있습니다...' },
   3: { label: '확인', description: '파싱된 거래 내역을 확인하세요' },
   4: { label: '저장 중', description: '거래 내역을 저장하고 있습니다...' },
@@ -30,6 +25,13 @@ interface ParsedTx {
   amount: number
   type: 'INCOME' | 'EXPENSE'
   originalDescription: string
+}
+
+interface ImageParsed {
+  imageId: string
+  source: string
+  fileName: string
+  transactions: ParsedTx[]
 }
 
 interface MatchResult {
@@ -50,45 +52,66 @@ interface Props {
 export default function UploadFlow({ year, month }: Props) {
   const [step, setStep] = useState<Step>(1)
   const [error, setError] = useState<string | null>(null)
-
-  // Step 1 results
-  const [imageId, setImageId] = useState<string | null>(null)
   const [monthId, setMonthId] = useState<string | null>(null)
 
-  // Step 2 results
-  const [parsedTransactions, setParsedTransactions] = useState<ParsedTx[]>([])
-  const [parsedSource, setParsedSource] = useState<string>('')
+  // Step 2: parsing progress
+  const [parseProgress, setParseProgress] = useState<{ current: number; total: number } | null>(null)
 
-  // Step 5 results
+  // Step 3: all parsed results grouped by image
+  const [parsedImages, setParsedImages] = useState<ImageParsed[]>([])
+
+  // Step 5-6 results
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null)
-
-  // Step 6 results
   const [categorizeResult, setCategorizeResult] = useState<CategorizeResult | null>(null)
 
-  const handleUploaded = useCallback(async (uploadedImageId: string, uploadedMonthId?: string) => {
-    setImageId(uploadedImageId)
-    if (uploadedMonthId) setMonthId(uploadedMonthId)
+  // total transaction count after save
+  const [savedCount, setSavedCount] = useState(0)
+
+  const handleUploaded = useCallback(async (results: Array<{ imageId: string; monthId: string; fileName: string }>) => {
+    if (results.length === 0) return
+
+    setMonthId(results[0].monthId)
     setError(null)
 
-    // Step 2: Parse
+    // Step 2: Parse all images
     setStep(2)
-    try {
-      const result = await parseImage(uploadedImageId)
-      if (result.error) {
-        setError(result.error)
-        setStep(1)
-        return
+    setParseProgress({ current: 0, total: results.length })
+
+    const allParsed: ImageParsed[] = []
+
+    for (let i = 0; i < results.length; i++) {
+      setParseProgress({ current: i + 1, total: results.length })
+
+      try {
+        const result = await parseImage(results[i].imageId)
+        if (result.error) {
+          setError(`${results[i].fileName}: ${result.error}`)
+          continue
+        }
+        allParsed.push({
+          imageId: results[i].imageId,
+          source: result.source || '',
+          fileName: results[i].fileName,
+          transactions: result.transactions || [],
+        })
+      } catch (e) {
+        setError(`${results[i].fileName}: ${e instanceof Error ? e.message : '파싱 오류'}`)
       }
-      setParsedTransactions(result.transactions || [])
-      setParsedSource(result.source || '')
-      setStep(3)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '파싱 중 오류가 발생했습니다')
-      setStep(1)
     }
+
+    setParseProgress(null)
+
+    if (allParsed.length === 0) {
+      setError('모든 이미지 파싱에 실패했습니다')
+      setStep(1)
+      return
+    }
+
+    setParsedImages(allParsed)
+    setStep(3)
   }, [])
 
-  const handleSaved = useCallback(async () => {
+  const handleAllSaved = useCallback(async () => {
     if (!monthId) {
       setError('월 정보가 없습니다')
       return
@@ -99,8 +122,7 @@ export default function UploadFlow({ year, month }: Props) {
     try {
       const result = await matchPayTransactions(monthId)
       setMatchResult(result)
-    } catch (e) {
-      // Pay matching failure is non-critical, continue
+    } catch {
       setMatchResult({ matched: 0, unmatched: [] })
     }
 
@@ -109,24 +131,42 @@ export default function UploadFlow({ year, month }: Props) {
     try {
       const result = await autoCategorize(monthId)
       setCategorizeResult(result)
-    } catch (e) {
+    } catch {
       setCategorizeResult({ categorized: 0, pending: 0 })
     }
 
-    // Step 7: Done
     setStep(7)
   }, [monthId])
+
+  // Track how many images have been saved
+  const [savedImageCount, setSavedImageCount] = useState(0)
+
+  const handleImageSaved = useCallback((imageIndex: number, count: number) => {
+    setSavedCount((prev) => prev + count)
+    setSavedImageCount((prev) => {
+      const newCount = prev + 1
+      if (newCount >= parsedImages.length) {
+        // All images saved, proceed to pay matching
+        setStep(4)
+        handleAllSaved()
+      }
+      return newCount
+    })
+  }, [parsedImages.length, handleAllSaved])
 
   const handleReset = () => {
     setStep(1)
     setError(null)
-    setImageId(null)
     setMonthId(null)
-    setParsedTransactions([])
-    setParsedSource('')
+    setParsedImages([])
     setMatchResult(null)
     setCategorizeResult(null)
+    setParseProgress(null)
+    setSavedCount(0)
+    setSavedImageCount(0)
   }
+
+  const totalParsedCount = parsedImages.reduce((sum, img) => sum + img.transactions.length, 0)
 
   return (
     <div className="space-y-6">
@@ -143,12 +183,10 @@ export default function UploadFlow({ year, month }: Props) {
                     : 'bg-gray-200 text-gray-500'
               }`}
             >
-              {s < step ? '\u2713' : s}
+              {s < step ? '✓' : s}
             </div>
             {s < 7 && (
-              <div
-                className={`w-6 h-0.5 ${s < step ? 'bg-green-500' : 'bg-gray-200'}`}
-              />
+              <div className={`w-6 h-0.5 ${s < step ? 'bg-green-500' : 'bg-gray-200'}`} />
             )}
           </div>
         ))}
@@ -170,43 +208,64 @@ export default function UploadFlow({ year, month }: Props) {
         </div>
       )}
 
-      {/* Step Content */}
+      {/* Step 1: Upload */}
       {step === 1 && (
-        <ImageUploader
-          year={year}
-          month={month}
-          onUploaded={handleUploaded}
-        />
+        <ImageUploader year={year} month={month} onUploaded={handleUploaded} />
       )}
 
+      {/* Step 2: Parsing */}
       {step === 2 && (
         <div className="flex flex-col items-center gap-4 py-12">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-600">AI가 이미지를 분석하고 있습니다...</p>
+          {parseProgress && (
+            <>
+              <p className="text-gray-600">
+                AI가 이미지를 분석하고 있습니다... ({parseProgress.current}/{parseProgress.total})
+              </p>
+              <div className="w-64 bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  style={{ width: `${(parseProgress.current / parseProgress.total) * 100}%` }}
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {step === 3 && imageId && (
-        <div className="space-y-4">
-          <ParsedTransactions
-            imageId={imageId}
-            transactions={parsedTransactions}
-            source={parsedSource}
-            onSaved={() => {
-              setStep(4)
-              handleSaved()
-            }}
-          />
+      {/* Step 3: Preview all parsed results */}
+      {step === 3 && (
+        <div className="space-y-6">
+          <div className="text-sm text-gray-500">
+            총 {parsedImages.length}개 이미지에서 {totalParsedCount}건의 거래 내역이 파싱되었습니다.
+          </div>
+          {parsedImages.map((img, idx) => (
+            <div key={img.imageId} className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded">{img.source}</span>
+                <span className="text-sm font-medium">{img.fileName}</span>
+                <span className="text-xs text-gray-400">{img.transactions.length}건</span>
+              </div>
+              <ParsedTransactions
+                imageId={img.imageId}
+                transactions={img.transactions}
+                source={img.source}
+                onSaved={() => handleImageSaved(idx, img.transactions.length)}
+              />
+            </div>
+          ))}
         </div>
       )}
 
+      {/* Step 4: Saving */}
       {step === 4 && (
         <div className="flex flex-col items-center gap-4 py-12">
           <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-600">거래 내역을 저장하고 있습니다...</p>
+          <p className="text-gray-600">거래 내역을 처리하고 있습니다...</p>
         </div>
       )}
 
+      {/* Step 5: Pay Matching */}
       {step === 5 && (
         <div className="flex flex-col items-center gap-4 py-12">
           <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -214,6 +273,7 @@ export default function UploadFlow({ year, month }: Props) {
         </div>
       )}
 
+      {/* Step 6: Auto Categorize */}
       {step === 6 && (
         <div className="flex flex-col items-center gap-4 py-12">
           <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin" />
@@ -221,15 +281,19 @@ export default function UploadFlow({ year, month }: Props) {
         </div>
       )}
 
+      {/* Step 7: Done */}
       {step === 7 && (
         <div className="space-y-6">
-          {/* Summary */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-green-800 mb-4">처리 완료</h3>
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">파싱된 거래</span>
-                <span className="font-medium">{parsedTransactions.length}건</span>
+                <span className="text-gray-600">업로드 이미지</span>
+                <span className="font-medium">{parsedImages.length}장</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">저장된 거래</span>
+                <span className="font-medium">{savedCount}건</span>
               </div>
               {matchResult && (
                 <>
@@ -262,7 +326,6 @@ export default function UploadFlow({ year, month }: Props) {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex flex-col gap-3">
             {categorizeResult && categorizeResult.pending > 0 && (
               <a
