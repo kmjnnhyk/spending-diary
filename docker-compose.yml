@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   db:
     image: postgres:16-alpine
@@ -11,6 +10,11 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U spending']
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app:
     build: .
@@ -21,10 +25,9 @@ services:
       DATABASE_URL: postgresql://spending:spending_dev@db:5432/spending_diary
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
-      - .:/app
-      - /app/node_modules
       - ./uploads:/app/uploads
 
 volumes:
