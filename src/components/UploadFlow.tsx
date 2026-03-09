@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import ImageUploader from './ImageUploader'
 import ParsedTransactions from './ParsedTransactions'
 import { parseImage } from '@/actions/parse'
@@ -141,18 +141,18 @@ export default function UploadFlow({ year, month }: Props) {
   // Track how many images have been saved
   const [savedImageCount, setSavedImageCount] = useState(0)
 
-  const handleImageSaved = useCallback((imageIndex: number, count: number) => {
+  const handleImageSaved = useCallback((_imageIndex: number, count: number) => {
     setSavedCount((prev) => prev + count)
-    setSavedImageCount((prev) => {
-      const newCount = prev + 1
-      if (newCount >= parsedImages.length) {
-        // All images saved, proceed to pay matching
-        setStep(4)
-        handleAllSaved()
-      }
-      return newCount
-    })
-  }, [parsedImages.length, handleAllSaved])
+    setSavedImageCount((prev) => prev + 1)
+  }, [])
+
+  // When all images are saved, proceed to pay matching
+  useEffect(() => {
+    if (savedImageCount > 0 && savedImageCount >= parsedImages.length) {
+      setStep(4)
+      handleAllSaved()
+    }
+  }, [savedImageCount, parsedImages.length, handleAllSaved])
 
   const handleReset = () => {
     setStep(1)
