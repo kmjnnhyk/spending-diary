@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import MonthSelector from '@/components/MonthSelector'
 import ClassifyCard from '@/components/ClassifyCard'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 
 export default async function ClassifyPage({
   searchParams,
@@ -59,20 +62,32 @@ export default async function ClassifyPage({
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">분류</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">분류</h1>
+          {transactions.length > 0 && (
+            <Badge variant="secondary">{transactions.length}건 대기</Badge>
+          )}
+        </div>
         <MonthSelector currentYear={year} currentMonth={month} />
       </div>
 
       {transactions.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-400 text-lg">분류 대기 중인 거래가 없습니다.</p>
-          <p className="text-gray-300 text-sm mt-2">모든 거래가 분류되었습니다!</p>
-        </div>
+        <Card>
+          <CardContent className="text-center py-16">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-green-500 mb-4"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <p className="text-muted-foreground text-lg">분류 대기 중인 거래가 없습니다.</p>
+            <p className="text-muted-foreground/60 text-sm mt-2">모든 거래가 분류되었습니다!</p>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">
-            {transactions.length}건의 거래가 분류를 기다리고 있습니다.
-          </p>
+          <Alert className="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <AlertTitle>분류 안내</AlertTitle>
+            <AlertDescription>
+              {transactions.length}건의 거래가 분류를 기다리고 있습니다. AI 추천이 있는 경우 참고하세요.
+            </AlertDescription>
+          </Alert>
           <div className="space-y-3">
             {transactions.map((t) => (
               <ClassifyCard key={t.id} transaction={t} categories={serializedCategories} />

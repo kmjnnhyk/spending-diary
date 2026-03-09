@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import { manualCategorize } from '@/actions/categorize'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Transaction {
   id: string
@@ -60,65 +64,73 @@ export default function ClassifyCard({ transaction, categories }: Props) {
   if (done) {
     const cat = categories.find((c) => c.id === selectedCategoryId)
     return (
-      <div className="border rounded-xl p-4 bg-green-50 border-green-200">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-green-700">
-            {transaction.description} &rarr; {cat?.name || '분류됨'}
-          </span>
-          <span className="text-xs text-green-600">완료</span>
-        </div>
-      </div>
+      <Card className="border-green-200 bg-green-50">
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-green-700">
+              {transaction.description} &rarr; {cat?.name || '분류됨'}
+            </span>
+            <Badge variant="secondary" className="bg-green-100 text-green-700">완료</Badge>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="border rounded-xl p-4 bg-white">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400">
-            {new Date(transaction.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-          </span>
-          <span className="text-sm font-medium">{transaction.description}</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-            {sourceLabels[transaction.source] || transaction.source}
+    <Card>
+      <CardContent className="py-3 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xs text-muted-foreground shrink-0">
+              {new Date(transaction.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+            </span>
+            <span className="text-sm font-medium truncate">{transaction.description}</span>
+            <Badge variant="outline" className="shrink-0">
+              {sourceLabels[transaction.source] || transaction.source}
+            </Badge>
+          </div>
+          <span className={`text-sm font-medium shrink-0 ml-2 ${transaction.type === 'INCOME' ? 'text-blue-600' : 'text-red-600'}`}>
+            {transaction.type === 'INCOME' ? '+' : '-'}{formatWon(transaction.amount)}
           </span>
         </div>
-        <span className={`text-sm font-medium ${transaction.type === 'INCOME' ? 'text-blue-600' : 'text-red-600'}`}>
-          {transaction.type === 'INCOME' ? '+' : '-'}{formatWon(transaction.amount)}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <select
-          value={selectedCategoryId}
-          onChange={(e) => setSelectedCategoryId(e.target.value)}
-          className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">카테고리 선택...</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.icon ? `${cat.icon} ` : ''}{cat.name}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={handleClassify}
-          disabled={!selectedCategoryId || loading}
-          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? '...' : '분류'}
-        </button>
-      </div>
-      {transaction.categoryName && (
-        <p className="mt-2 text-xs text-gray-400">
-          AI 추천: <span
-            className="px-1.5 py-0.5 rounded"
-            style={{
-              backgroundColor: (transaction.categoryColor || '#888') + '20',
-              color: transaction.categoryColor || '#888',
-            }}
-          >{transaction.categoryName}</span>
-        </p>
-      )}
-    </div>
+        <div className="flex items-center gap-2">
+          <Select value={selectedCategoryId} onValueChange={(v) => setSelectedCategoryId(v ?? '')}>
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="카테고리 선택..." />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={handleClassify}
+            disabled={!selectedCategoryId || loading}
+            size="default"
+          >
+            {loading ? '...' : '분류'}
+          </Button>
+        </div>
+        {transaction.categoryName && (
+          <p className="text-xs text-muted-foreground">
+            AI 추천:{' '}
+            <Badge
+              variant="secondary"
+              className="text-xs"
+              style={{
+                backgroundColor: (transaction.categoryColor || '#888') + '20',
+                color: transaction.categoryColor || '#888',
+              }}
+            >
+              {transaction.categoryName}
+            </Badge>
+          </p>
+        )}
+      </CardContent>
+    </Card>
   )
 }
