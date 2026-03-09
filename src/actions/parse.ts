@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { parseTransactionImage, ParsedTransaction } from '@/lib/claude'
-import { CategoryStatus } from '@/generated/prisma'
+import { CategoryStatus, TransactionType } from '@/generated/prisma'
 
 export async function parseImage(imageId: string) {
   const image = await prisma.uploadedImage.findUnique({
@@ -42,7 +42,7 @@ export async function saveTransactions(
           description: t.description,
           originalDescription: t.originalDescription,
           amount: t.amount,
-          type: t.type as any,
+          type: t.type as TransactionType,
           source: image.source,
           categoryStatus: CategoryStatus.PENDING,
         },

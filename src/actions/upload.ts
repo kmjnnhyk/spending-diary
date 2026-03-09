@@ -15,6 +15,11 @@ export async function uploadImage(formData: FormData) {
     return { error: 'Missing required fields' }
   }
 
+  const MAX_SIZE = 10 * 1024 * 1024
+  if (file.size > MAX_SIZE) return { error: 'File too large (max 10MB)' }
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) return { error: 'Invalid file type' }
+
   const monthRecord = await prisma.month.upsert({
     where: { year_month: { year, month } },
     update: {},

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 interface Props {
   currentYear: number
@@ -9,9 +9,13 @@ interface Props {
 
 export default function MonthSelector({ currentYear, currentMonth }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const navigate = (year: number, month: number) => {
-    router.push(`?year=${year}&month=${month}`)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('year', String(year))
+    params.set('month', String(month))
+    router.push(`?${params.toString()}`)
   }
 
   const prev = () => {

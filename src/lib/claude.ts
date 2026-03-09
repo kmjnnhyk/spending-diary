@@ -69,5 +69,9 @@ JSON \ubc30\uc5f4\ub9cc \ubc18\ud658\ud558\uc138\uc694. \ub2e4\ub978 \ud14d\uc2a
   const jsonMatch = text.match(/\[[\s\S]*\]/)
   if (!jsonMatch) return []
 
-  return JSON.parse(jsonMatch[0])
+  try {
+    return JSON.parse(jsonMatch[0])
+  } catch {
+    return []
+  }
 }
