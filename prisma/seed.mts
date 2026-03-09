@@ -20,6 +20,10 @@ const categories = [
   { name: '여가/문화', icon: '🎬', color: '#FCC2D7' },
   { name: '경조사', icon: '💐', color: '#F06595' },
   { name: '이체/송금', icon: '💸', color: '#ADB5BD' },
+  { name: '쿠팡', icon: '📦', color: '#E44D26' },
+  { name: '편의점', icon: '🏪', color: '#38D9A9' },
+  { name: '공과금', icon: '🔌', color: '#5C7CFA' },
+  { name: '중고판매', icon: '🥕', color: '#FF922B' },
   { name: '기타', icon: '📌', color: '#868E96' },
 ]
 

@@ -9,6 +9,7 @@ interface TransactionForCategorization {
   description: string
   amount: number
   type: string
+  source?: string
 }
 
 interface CategoryResult {
@@ -24,7 +25,7 @@ export async function classifyTransactions(
   if (transactions.length === 0) return []
 
   const transactionList = transactions
-    .map((t) => `- ID: ${t.id} | ${t.description} | ${t.amount.toLocaleString()}\uc6d0 | ${t.type}`)
+    .map((t) => `- ID: ${t.id} | ${t.description} | ${t.amount.toLocaleString()}원 | ${t.type}${t.source ? ` | ${t.source}` : ''}`)
     .join('\n')
 
   const response = await anthropic.messages.create({
@@ -33,21 +34,32 @@ export async function classifyTransactions(
     messages: [
       {
         role: 'user',
-        content: `\ub2e4\uc74c \uac70\ub798 \ub0b4\uc5ed\ub4e4\uc744 \uce74\ud14c\uace0\ub9ac\ub85c \ubd84\ub958\ud574\uc8fc\uc138\uc694.
+        content: `다음 거래 내역들을 카테고리로 분류해주세요.
 
-\uc0ac\uc6a9 \uac00\ub2a5\ud55c \uce74\ud14c\uace0\ub9ac: ${categoryNames.join(', ')}
+사용 가능한 카테고리: ${categoryNames.join(', ')}
 
-\uac70\ub798 \ub0b4\uc5ed:
+분류 가이드:
+- 쿠팡, FBS출금 쿠팡: "쿠팡" 카테고리
+- 세븐일레븐, CU, GS25, 이마트24 등: "편의점" 카테고리
+- 코원에너지서비스, 가스, 전기, 수도: "공과금" 카테고리
+- Apple Services, 네이버플러스 멤버십: "구독/멤버십" 카테고리
+- 카카오모빌리티, 택시, 버스, 지하철: "교통" 카테고리
+- KREAM, 영화, 공연: "여가/문화" 카테고리
+- 당근마켓 판매 수입: "중고판매" 카테고리 (없으면 "기타")
+- 개인에게 송금한 내역 (정산 등): confidence를 반드시 "low"로 설정
+- 판단이 어려운 내역: confidence를 반드시 "low"로 설정
+
+거래 내역:
 ${transactionList}
 
-\uac01 \uac70\ub798\uc5d0 \ub300\ud574 JSON \ubc30\uc5f4\ub85c \ubc18\ud658:
+각 거래에 대해 JSON 배열로 반환:
 [
-  { "transactionId": "ID\uac12", "category": "\uce74\ud14c\uace0\ub9ac\uba85", "confidence": "high" \ub610\ub294 "low" }
+  { "transactionId": "ID값", "category": "카테고리명", "confidence": "high" 또는 "low" }
 ]
 
-- \ud655\uc2e4\ud55c \ubd84\ub958: confidence "high"
-- \uc560\ub9e4\ud558\uac70\ub098 \ud310\ub2e8 \uc5b4\ub824\uc6b4 \uacbd\uc6b0: confidence "low"
-- JSON \ubc30\uc5f4\ub9cc \ubc18\ud658, \ub2e4\ub978 \ud14d\uc2a4\ud2b8 \uc5c6\uc774.`,
+- 확실한 분류: confidence "high"
+- 애매하거나 판단 어려운 경우: confidence "low" (방어적으로 판단하세요)
+- JSON 배열만 반환, 다른 텍스트 없이.`,
       },
     ],
   })

@@ -24,6 +24,15 @@ enum CategoryStatus {
   AUTO
   MANUAL
   PENDING
+  UNVERIFIED
+}
+
+enum TransactionFlag {
+  NONE
+  INTERNAL_TRANSFER
+  REFUND
+  CANCELLED
+  PAY_CHARGE
 }
 
 model Month {
@@ -63,6 +72,10 @@ model Transaction {
   linkedPayTransaction    Transaction?   @relation("PayLink", fields: [linkedPayTransactionId], references: [id])
   linkedFromTransactions  Transaction[]  @relation("PayLink")
   isPayParent             Boolean        @default(false)
+  flag                    TransactionFlag @default(NONE)
+  refundOfId              String?
+  refundOf                Transaction?   @relation("RefundLink", fields: [refundOfId], references: [id])
+  refundedBy              Transaction[]  @relation("RefundLink")
   createdAt               DateTime       @default(now())
 
   @@index([monthId])

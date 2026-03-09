@@ -1,10 +1,8 @@
-import Link from 'next/link'
 import { getTransactions } from '@/actions/transactions'
 import MonthSelector from '@/components/MonthSelector'
+import TransactionFilters from '@/components/TransactionFilters'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
 
@@ -60,38 +58,11 @@ export default async function TransactionsPage({
         <MonthSelector currentYear={year} currentMonth={month} />
       </div>
 
-      {/* Filter bar */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        <Link
-          href={`/transactions?${baseQuery}`}
-          className={cn(buttonVariants({ variant: !params.source ? 'default' : 'outline', size: 'sm' }))}
-        >
-          전체
-        </Link>
-        {Object.entries(sourceLabels).map(([key, label]) => (
-          <Link
-            key={key}
-            href={`/transactions?${baseQuery}&source=${key}${params.search ? `&search=${params.search}` : ''}`}
-            className={cn(buttonVariants({ variant: params.source === key ? 'default' : 'outline', size: 'sm' }))}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      {/* Search */}
-      <form className="mb-6">
-        <input type="hidden" name="year" value={year} />
-        <input type="hidden" name="month" value={month} />
-        {params.source && <input type="hidden" name="source" value={params.source} />}
-        <input
-          type="text"
-          name="search"
-          defaultValue={params.search || ''}
-          placeholder="거래 내역 검색..."
-          className="w-full border border-input rounded-lg px-4 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </form>
+      <TransactionFilters
+        baseQuery={baseQuery}
+        currentSource={params.source}
+        currentSearch={params.search}
+      />
 
       {/* Transactions Table */}
       {transactions.length === 0 ? (
@@ -113,7 +84,7 @@ export default async function TransactionsPage({
                 {transactions.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="text-muted-foreground">
-                      {new Date(t.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                      {`${new Date(t.date).getMonth() + 1}월 ${new Date(t.date).getDate()}일`}
                     </TableCell>
                     <TableCell className="font-medium max-w-[200px] truncate">
                       {t.description}

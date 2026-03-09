@@ -25,11 +25,14 @@ type SourceKey = typeof SOURCES[number]['key']
 interface AnalysisResult {
   parseResults: Array<{ source: string; count: number; error?: string }>
   totalParsed: number
+  internalTransfers: number
   duplicatesRemoved: number
   payMatched: number
   saved: number
   categorized: number
   pendingClassification: number
+  unverified: number
+  refundMatched: number
 }
 
 interface Props {
@@ -221,12 +224,20 @@ export default function UploadFlow({ year, month }: Props) {
                 <span className="font-medium">{result.totalParsed}건</span>
               </div>
               <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">내부 이체 제외</span>
+                <span className="font-medium">{result.internalTransfers}건</span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">중복 제거</span>
                 <span className="font-medium">{result.duplicatesRemoved}건</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">페이 매칭</span>
                 <Badge variant="secondary">{result.payMatched}건</Badge>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">환불 매칭</span>
+                <Badge variant="secondary">{result.refundMatched}건</Badge>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">저장된 거래</span>
@@ -239,6 +250,10 @@ export default function UploadFlow({ year, month }: Props) {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">수동 분류 필요</span>
                 <Badge variant="outline">{result.pendingClassification}건</Badge>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">미확인 (수기 확인)</span>
+                <Badge variant="outline">{result.unverified}건</Badge>
               </div>
             </div>
 

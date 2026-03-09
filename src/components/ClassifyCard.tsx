@@ -97,7 +97,14 @@ export default function ClassifyCard({ transaction, categories }: Props) {
         <div className="flex items-center gap-2">
           <Select value={selectedCategoryId} onValueChange={(v) => setSelectedCategoryId(v ?? '')}>
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="카테고리 선택..." />
+              <SelectValue placeholder="카테고리 선택...">
+                {selectedCategoryId
+                  ? (() => {
+                      const cat = categories.find(c => c.id === selectedCategoryId)
+                      return cat ? `${cat.icon ? cat.icon + ' ' : ''}${cat.name}` : '카테고리 선택...'
+                    })()
+                  : null}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
